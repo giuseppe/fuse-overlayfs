@@ -40,7 +40,7 @@
 #include <err.h>
 #include <sys/ioctl.h>
 #ifdef HAVE_SYS_SENDFILE_H
-# include <sys/sendfile.h>
+#  include <sys/sendfile.h>
 #endif
 
 #include <fuse_overlayfs_error.h>
@@ -70,12 +70,14 @@
 #include <plugin.h>
 
 #ifndef TEMP_FAILURE_RETRY
-#define TEMP_FAILURE_RETRY(expression) \
-  (__extension__                                                              \
-    ({ long int __result;                                                     \
-       do __result = (long int) (expression);                                 \
-       while (__result == -1L && errno == EINTR);                             \
-       __result; }))
+#  define TEMP_FAILURE_RETRY(expression)         \
+    (__extension__({                             \
+      long int __result;                         \
+      do                                         \
+        __result = (long int) (expression);      \
+      while (__result == -1L && errno == EINTR); \
+      __result;                                  \
+    }))
 #endif
 
 static bool disable_locking;
@@ -111,15 +113,15 @@ cleanup_lockp (int *l)
   *l = 0;
 }
 
-#define cleanup_lock __attribute__((cleanup (cleanup_lockp)))
+#define cleanup_lock __attribute__ ((cleanup (cleanup_lockp)))
 
 #ifndef HAVE_OPEN_BY_HANDLE_AT
 struct file_handle
 {
-  unsigned int  handle_bytes;   /* Size of f_handle [in, out] */
-  int           handle_type;    /* Handle type [out] */
-  unsigned char f_handle[0];    /* File identifier (sized by
-				   caller) [out] */
+  unsigned int handle_bytes; /* Size of f_handle [in, out] */
+  int handle_type;           /* Handle type [out] */
+  unsigned char f_handle[0]; /* File identifier (sized by
+                                caller) [out] */
 };
 
 int
@@ -130,12 +132,12 @@ open_by_handle_at (int mount_fd, struct file_handle *handle, int flags)
 #endif
 
 #ifndef RENAME_EXCHANGE
-# define RENAME_EXCHANGE (1 << 1)
-# define RENAME_NOREPLACE (1 << 2)
+#  define RENAME_EXCHANGE (1 << 1)
+#  define RENAME_NOREPLACE (1 << 2)
 #endif
 
 #ifndef RENAME_WHITEOUT
-# define RENAME_WHITEOUT (1 << 2)
+#  define RENAME_WHITEOUT (1 << 2)
 #endif
 
 #define XATTR_PREFIX "user.fuseoverlayfs."
@@ -146,18 +148,16 @@ open_by_handle_at (int mount_fd, struct file_handle *handle, int flags)
 #define PRIVILEGED_ORIGIN_XATTR "trusted.overlay.origin"
 #define OPAQUE_WHITEOUT ".wh..wh..opq"
 
-#if !defined FICLONE && defined __linux__
-# define FICLONE _IOW (0x94, 9, int)
+#if ! defined FICLONE && defined __linux__
+#  define FICLONE _IOW (0x94, 9, int)
 #endif
 
-#if defined(__GNUC__) && (__GNUC__ > 4 || __GNUC__ == 4 && __GNUC_MINOR__ >= 6) && !defined __cplusplus
-_Static_assert (sizeof (fuse_ino_t) >= sizeof (uintptr_t),
-		"fuse_ino_t too small to hold uintptr_t values!");
+#if defined(__GNUC__) && (__GNUC__ > 4 || __GNUC__ == 4 && __GNUC_MINOR__ >= 6) && ! defined __cplusplus
+_Static_assert(sizeof (fuse_ino_t) >= sizeof (uintptr_t), "fuse_ino_t too small to hold uintptr_t values!");
 #else
 struct _uintptr_to_must_hold_fuse_ino_t_dummy_struct
 {
-  unsigned _uintptr_to_must_hold_fuse_ino_t:
-    ((sizeof (fuse_ino_t) >= sizeof (uintptr_t)) ? 1 : -1);
+  unsigned _uintptr_to_must_hold_fuse_ino_t : ((sizeof (fuse_ino_t) >= sizeof (uintptr_t)) ? 1 : -1);
 };
 #endif
 
@@ -174,39 +174,23 @@ get_timeout (struct ovl_data *lo)
   return lo->timeout;
 }
 
-static const struct fuse_opt ovl_opts[] = {
-  {"redirect_dir=%s",
-   offsetof (struct ovl_data, redirect_dir), 0},
-  {"context=%s",
-   offsetof (struct ovl_data, context), 0},
-  {"lowerdir=%s",
-   offsetof (struct ovl_data, lowerdir), 0},
-  {"upperdir=%s",
-   offsetof (struct ovl_data, upperdir), 0},
-  {"workdir=%s",
-   offsetof (struct ovl_data, workdir), 0},
-  {"uidmapping=%s",
-   offsetof (struct ovl_data, uid_str), 0},
-  {"gidmapping=%s",
-   offsetof (struct ovl_data, gid_str), 0},
-  {"timeout=%s",
-   offsetof (struct ovl_data, timeout_str), 0},
-  {"threaded=%d",
-   offsetof (struct ovl_data, threaded), 0},
-  {"fsync=%d",
-   offsetof (struct ovl_data, fsync), 1},
-  {"fast_ino=%d",
-   offsetof (struct ovl_data, fast_ino_check), 0},
-  {"writeback=%d",
-   offsetof (struct ovl_data, writeback), 1},
-  {"noxattrs=%d",
-   offsetof (struct ovl_data, disable_xattrs), 1},
-  {"plugins=%s",
-   offsetof (struct ovl_data, plugins), 0},
-  {"xattr_permissions=%d",
-   offsetof (struct ovl_data, xattr_permissions), 0},
-  FUSE_OPT_END
-};
+static const struct fuse_opt ovl_opts[]
+    = { { "redirect_dir=%s", offsetof (struct ovl_data, redirect_dir), 0 },
+        { "context=%s", offsetof (struct ovl_data, context), 0 },
+        { "lowerdir=%s", offsetof (struct ovl_data, lowerdir), 0 },
+        { "upperdir=%s", offsetof (struct ovl_data, upperdir), 0 },
+        { "workdir=%s", offsetof (struct ovl_data, workdir), 0 },
+        { "uidmapping=%s", offsetof (struct ovl_data, uid_str), 0 },
+        { "gidmapping=%s", offsetof (struct ovl_data, gid_str), 0 },
+        { "timeout=%s", offsetof (struct ovl_data, timeout_str), 0 },
+        { "threaded=%d", offsetof (struct ovl_data, threaded), 0 },
+        { "fsync=%d", offsetof (struct ovl_data, fsync), 1 },
+        { "fast_ino=%d", offsetof (struct ovl_data, fast_ino_check), 0 },
+        { "writeback=%d", offsetof (struct ovl_data, writeback), 1 },
+        { "noxattrs=%d", offsetof (struct ovl_data, disable_xattrs), 1 },
+        { "plugins=%s", offsetof (struct ovl_data, plugins), 0 },
+        { "xattr_permissions=%d", offsetof (struct ovl_data, xattr_permissions), 0 },
+        FUSE_OPT_END };
 
 /* The current process has enough privileges to use mknod.  */
 static bool can_mknod = true;
@@ -217,7 +201,7 @@ typedef unsigned char u8;
 typedef unsigned char uuid_t[16];
 
 /* The type returned by overlay exportfs ops when encoding an ovl_fh handle */
-#define OVL_FILEID	0xfb
+#define OVL_FILEID 0xfb
 
 /* On-disk and in-memeory format for redirect by file handle */
 struct ovl_fh
@@ -270,7 +254,7 @@ check_can_mknod (struct ovl_data *lo)
 
   sprintf (path, "%lu", get_next_wd_counter ());
 
-  ret = mknodat (lo->workdir_fd, path, S_IFCHR|0700, makedev (0, 0));
+  ret = mknodat (lo->workdir_fd, path, S_IFCHR | 0700, makedev (0, 0));
   if (ret == 0)
     unlinkat (lo->workdir_fd, path, 0);
   if (ret < 0 && errno == EPERM)
@@ -462,8 +446,7 @@ has_prefix (const char *str, const char *pref)
 static bool
 can_access_xattr (const char *name)
 {
-  return !has_prefix (name, XATTR_PREFIX)               \
-    && !has_prefix (name, PRIVILEGED_XATTR_PREFIX);
+  return ! has_prefix (name, XATTR_PREFIX) && ! has_prefix (name, PRIVILEGED_XATTR_PREFIX);
 }
 
 static ssize_t
@@ -480,8 +463,8 @@ write_permission_xattr (struct ovl_data *lo, int fd, const char *path, uid_t uid
       return 0;
 
     case 1:
-    name = XATTR_PRIVILEGED_OVERRIDE_STAT;
-    break;
+      name = XATTR_PRIVILEGED_OVERRIDE_STAT;
+      break;
 
     case 2:
       name = XATTR_OVERRIDE_STAT;
@@ -535,7 +518,7 @@ do_fchownat (struct ovl_data *lo, int dfd, const char *path, uid_t uid, gid_t gi
   if (lo->xattr_permissions)
     {
       char proc_path[32];
-      cleanup_close int fd = openat (dfd, path, O_NOFOLLOW|O_PATH);
+      cleanup_close int fd = openat (dfd, path, O_NOFOLLOW | O_PATH);
       if (fd < 0)
         return fd;
 
@@ -627,10 +610,10 @@ set_fd_opaque (int fd)
       if (errno == ENOTSUP)
         goto create_opq_whiteout;
       if (errno != EPERM || (fsetxattr (fd, OPAQUE_XATTR, "y", 1, 0) < 0 && errno != ENOTSUP))
-          return -1;
+        return -1;
     }
- create_opq_whiteout:
-  opq_whiteout_fd = TEMP_FAILURE_RETRY (safe_openat (fd, OPAQUE_WHITEOUT, O_CREAT|O_WRONLY|O_NONBLOCK, 0700));
+create_opq_whiteout:
+  opq_whiteout_fd = TEMP_FAILURE_RETRY (safe_openat (fd, OPAQUE_WHITEOUT, O_CREAT | O_WRONLY | O_NONBLOCK, 0700));
   return (opq_whiteout_fd >= 0 || ret == 0) ? 0 : -1;
 }
 
@@ -688,17 +671,17 @@ create_whiteout (struct ovl_data *lo, struct ovl_node *parent, const char *name,
           break;
         }
       /* Not present in the lower layers, do not do anything.  */
-      if (!found)
+      if (! found)
         return 0;
     }
 
-  if (!disable_ovl_whiteout && !skip_mknod && can_mknod)
+  if (! disable_ovl_whiteout && ! skip_mknod && can_mknod)
     {
       char whiteout_path[PATH_MAX];
 
       strconcat3 (whiteout_path, PATH_MAX, parent->path, "/", name);
 
-      ret = mknodat (get_upper_layer (lo)->fd, whiteout_path, S_IFCHR|0700, makedev (0, 0));
+      ret = mknodat (get_upper_layer (lo)->fd, whiteout_path, S_IFCHR | 0700, makedev (0, 0));
       if (ret == 0)
         return 0;
 
@@ -711,8 +694,7 @@ create_whiteout (struct ovl_data *lo, struct ovl_node *parent, const char *name,
 
   strconcat3 (whiteout_wh_path, PATH_MAX, parent->path, "/.wh.", name);
 
-
-  fd = get_upper_layer (lo)->ds->openat (get_upper_layer (lo), whiteout_wh_path, O_CREAT|O_WRONLY|O_NONBLOCK, 0700);
+  fd = get_upper_layer (lo)->ds->openat (get_upper_layer (lo), whiteout_wh_path, O_CREAT | O_WRONLY | O_NONBLOCK, 0700);
   if (fd < 0 && errno != EEXIST)
     return -1;
 
@@ -729,9 +711,7 @@ delete_whiteout (struct ovl_data *lo, int dirfd, struct ovl_node *parent, const 
       if (dirfd >= 0)
         {
           if (TEMP_FAILURE_RETRY (fstatat (dirfd, name, &st, AT_SYMLINK_NOFOLLOW)) == 0
-              && (st.st_mode & S_IFMT) == S_IFCHR
-              && major (st.st_rdev) == 0
-              && minor (st.st_rdev) == 0)
+              && (st.st_mode & S_IFMT) == S_IFCHR && major (st.st_rdev) == 0 && minor (st.st_rdev) == 0)
             {
               if (unlinkat (dirfd, name, 0) < 0)
                 return -1;
@@ -743,10 +723,10 @@ delete_whiteout (struct ovl_data *lo, int dirfd, struct ovl_node *parent, const 
 
           strconcat3 (whiteout_path, PATH_MAX, parent->path, "/", name);
 
-          if (get_upper_layer (lo)->ds->statat (get_upper_layer (lo), whiteout_path, &st, AT_SYMLINK_NOFOLLOW, STATX_MODE|STATX_TYPE) == 0
-              && (st.st_mode & S_IFMT) == S_IFCHR
-              && major (st.st_rdev) == 0
-              && minor (st.st_rdev) == 0)
+          if (get_upper_layer (lo)->ds->statat (get_upper_layer (lo), whiteout_path, &st, AT_SYMLINK_NOFOLLOW,
+                                                STATX_MODE | STATX_TYPE)
+                  == 0
+              && (st.st_mode & S_IFMT) == S_IFCHR && major (st.st_rdev) == 0 && minor (st.st_rdev) == 0)
             {
               if (unlinkat (get_upper_layer (lo)->fd, whiteout_path, 0) < 0)
                 return -1;
@@ -819,7 +799,7 @@ rpl_stat (fuse_req_t req, struct ovl_node *node, int fd, const char *path, struc
   struct ovl_data *data = ovl_data (req);
 
   if (st_in)
-    memcpy (st, st_in, sizeof (* st));
+    memcpy (st, st_in, sizeof (*st));
   else if (fd >= 0)
     ret = l->ds->fstat (l, fd, path, STATX_BASIC_STATS, st);
   else if (path != NULL)
@@ -924,7 +904,7 @@ inode_free (void *p)
 
       tmp->ino = NULL;
       node_free (tmp);
-  }
+    }
 
   free (i);
 }
@@ -962,8 +942,7 @@ drop_node_from_ino (Hash_table *inodes, struct ovl_node *node)
 }
 
 static int
-direct_renameat2 (int olddirfd, const char *oldpath,
-                  int newdirfd, const char *newpath, unsigned int flags)
+direct_renameat2 (int olddirfd, const char *oldpath, int newdirfd, const char *newpath, unsigned int flags)
 {
   return syscall (SYS_renameat2, olddirfd, oldpath, newdirfd, newpath, flags);
 }
@@ -986,8 +965,9 @@ hide_node (struct ovl_data *lo, struct ovl_node *node, bool unlink_src)
       bool whiteout_created = false;
       bool needs_whiteout;
 
-      needs_whiteout = (node->last_layer != get_upper_layer (lo)) && (node->parent && node->parent->last_layer != get_upper_layer (lo));
-      if (!needs_whiteout && node_dirp (node))
+      needs_whiteout = (node->last_layer != get_upper_layer (lo))
+                       && (node->parent && node->parent->last_layer != get_upper_layer (lo));
+      if (! needs_whiteout && node_dirp (node))
         {
           ret = is_directory_opaque (get_upper_layer (lo), node->path);
           if (ret < 0)
@@ -999,13 +979,14 @@ hide_node (struct ovl_data *lo, struct ovl_node *node, bool unlink_src)
       if (needs_whiteout)
         {
           /* If the atomic rename+mknod failed, then fallback into doing it in two steps.  */
-          if (can_mknod && syscall (SYS_renameat2, node_dirfd (node), node->path, lo->workdir_fd, newpath, RENAME_WHITEOUT) == 0)
+          if (can_mknod
+              && syscall (SYS_renameat2, node_dirfd (node), node->path, lo->workdir_fd, newpath, RENAME_WHITEOUT) == 0)
             {
               whiteout_created = true;
               moved = true;
             }
 
-          if (!whiteout_created)
+          if (! whiteout_created)
             {
               if (node->parent)
                 {
@@ -1018,7 +999,7 @@ hide_node (struct ovl_data *lo, struct ovl_node *node, bool unlink_src)
             }
         }
 
-      if (!moved)
+      if (! moved)
         {
           if (renameat (node_dirfd (node), node->path, lo->workdir_fd, newpath) < 0)
             return -1;
@@ -1042,7 +1023,7 @@ hide_node (struct ovl_data *lo, struct ovl_node *node, bool unlink_src)
   node->hidden_dirfd = lo->workdir_fd;
   free (node->path);
   node->path = newpath;
-  newpath = NULL;  /* Do not auto cleanup.  */
+  newpath = NULL; /* Do not auto cleanup.  */
 
   node->hidden = 1;
   if (node->parent)
@@ -1173,8 +1154,7 @@ ovl_forget (fuse_req_t req, fuse_ino_t ino, uint64_t nlookup)
   struct ovl_data *lo = ovl_data (req);
 
   if (UNLIKELY (ovl_debug (req)))
-    fprintf (stderr, "ovl_forget(ino=%" PRIu64 ", nlookup=%lu)\n",
-	     ino, nlookup);
+    fprintf (stderr, "ovl_forget(ino=%" PRIu64 ", nlookup=%lu)\n", ino, nlookup);
   do_forget (lo, ino, nlookup);
   fuse_reply_none (req);
 }
@@ -1187,8 +1167,7 @@ ovl_forget_multi (fuse_req_t req, size_t count, struct fuse_forget_data *forgets
   struct ovl_data *lo = ovl_data (req);
 
   if (UNLIKELY (ovl_debug (req)))
-    fprintf (stderr, "ovl_forget_multi(count=%zu, forgets=%p)\n",
-	     count, forgets);
+    fprintf (stderr, "ovl_forget_multi(count=%zu, forgets=%p)\n", count, forgets);
 
   for (i = 0; i < count; i++)
     do_forget (lo, forgets[i].ino, forgets[i].nlookup);
@@ -1209,7 +1188,7 @@ cleanup_node_initp (struct ovl_node **p)
   free (n);
 }
 
-#define cleanup_node_init __attribute__((cleanup (cleanup_node_initp)))
+#define cleanup_node_init __attribute__ ((cleanup (cleanup_node_initp)))
 
 static void
 node_set_name (struct ovl_node *node, char *name)
@@ -1294,7 +1273,8 @@ safe_read_xattr (char **ret, int sfd, const char *name, size_t initial_size)
 }
 
 static struct ovl_node *
-make_ovl_node (struct ovl_data *lo, const char *path, struct ovl_layer *layer, const char *name, ino_t ino, dev_t dev, bool dir_p, struct ovl_node *parent, bool fast_ino_check)
+make_ovl_node (struct ovl_data *lo, const char *path, struct ovl_layer *layer, const char *name, ino_t ino, dev_t dev,
+               bool dir_p, struct ovl_node *parent, bool fast_ino_check)
 {
   mode_t mode = 0;
   char *new_name;
@@ -1304,7 +1284,7 @@ make_ovl_node (struct ovl_data *lo, const char *path, struct ovl_layer *layer, c
 
   ret = calloc (1, sizeof (*ret));
   if (ret == NULL)
-      return NULL;
+    return NULL;
 
   ret->parent = parent;
   ret->layer = layer;
@@ -1328,7 +1308,7 @@ make_ovl_node (struct ovl_data *lo, const char *path, struct ovl_layer *layer, c
   if (ret->path == NULL)
     return NULL;
 
-  if (!dir_p)
+  if (! dir_p)
     ret->children = NULL;
   else
     {
@@ -1366,18 +1346,18 @@ make_ovl_node (struct ovl_data *lo, const char *path, struct ovl_layer *layer, c
 
               r = it->ds->file_exists (it, whiteout_path);
               if (r < 0 && errno != ENOENT && errno != ENOTDIR)
-               return NULL;
+                return NULL;
 
               if (r == 0)
                 break;
             }
 
           if (! fast_ino_check)
-            fd = it->ds->openat (it, npath, O_RDONLY|O_NONBLOCK|O_NOFOLLOW, 0755);
+            fd = it->ds->openat (it, npath, O_RDONLY | O_NONBLOCK | O_NOFOLLOW, 0755);
 
           if (fd < 0)
             {
-              if (it->ds->statat (it, npath, &st, AT_SYMLINK_NOFOLLOW, STATX_TYPE|STATX_MODE|STATX_INO) == 0)
+              if (it->ds->statat (it, npath, &st, AT_SYMLINK_NOFOLLOW, STATX_TYPE | STATX_MODE | STATX_INO) == 0)
                 {
                   if (has_origin)
                     {
@@ -1393,7 +1373,7 @@ make_ovl_node (struct ovl_data *lo, const char *path, struct ovl_layer *layer, c
             }
 
           /* It is an open FD, stat the file and read the origin xattrs.  */
-          if (it->ds->fstat (it, fd, npath, STATX_TYPE|STATX_MODE|STATX_INO, &st) == 0)
+          if (it->ds->fstat (it, fd, npath, STATX_TYPE | STATX_MODE | STATX_INO, &st) == 0)
             {
               if (has_origin)
                 {
@@ -1413,7 +1393,7 @@ make_ovl_node (struct ovl_data *lo, const char *path, struct ovl_layer *layer, c
               size_t s = ofh->len - sizeof (*ofh);
               struct file_handle *fh = (struct file_handle *) buf;
 
-              if (s < sizeof (buf) - sizeof(int) * 2)
+              if (s < sizeof (buf) - sizeof (int) * 2)
                 {
                   cleanup_close int originfd = -1;
 
@@ -1429,7 +1409,7 @@ make_ovl_node (struct ovl_data *lo, const char *path, struct ovl_layer *layer, c
                   originfd = open_by_handle_at (AT_FDCWD, fh, O_RDONLY);
                   if (originfd >= 0)
                     {
-                      if (it->ds->fstat (it, originfd, npath, STATX_TYPE|STATX_MODE|STATX_INO, &st) == 0)
+                      if (it->ds->fstat (it, originfd, npath, STATX_TYPE | STATX_MODE | STATX_INO, &st) == 0)
                         {
                           ret->tmp_ino = st.st_ino;
                           ret->tmp_dev = st.st_dev;
@@ -1451,7 +1431,7 @@ make_ovl_node (struct ovl_data *lo, const char *path, struct ovl_layer *layer, c
               origin = NULL;
             }
 
-no_fd:
+        no_fd:
           if (parent && parent->last_layer == it)
             break;
         }
@@ -1506,10 +1486,7 @@ get_whiteout_name (const char *name, struct stat *st)
 {
   if (has_prefix (name, ".wh."))
     return name + 4;
-  if (st
-      && (st->st_mode & S_IFMT) == S_IFCHR
-      && major (st->st_rdev) == 0
-      && minor (st->st_rdev) == 0)
+  if (st && (st->st_mode & S_IFMT) == S_IFCHR && major (st->st_rdev) == 0 && minor (st->st_rdev) == 0)
     return name;
   return NULL;
 }
@@ -1522,7 +1499,7 @@ load_dir (struct ovl_data *lo, struct ovl_node *n, struct ovl_layer *layer, char
   struct ovl_layer *it, *upper_layer = get_upper_layer (lo);
   char parent_whiteout_path[PATH_MAX];
 
-  if (!n)
+  if (! n)
     {
       n = make_ovl_node (lo, path, layer, name, 0, 0, true, NULL, lo->fast_ino_check);
       if (n == NULL)
@@ -1537,7 +1514,7 @@ load_dir (struct ovl_data *lo, struct ovl_node *n, struct ovl_layer *layer, char
   else
     strconcat3 (parent_whiteout_path, PATH_MAX, ".wh.", name, NULL);
 
-  for (it = lo->layers; it && !stop_lookup; it = it->next)
+  for (it = lo->layers; it && ! stop_lookup; it = it->next)
     {
       int ret;
       DIR *dp = NULL;
@@ -1585,7 +1562,7 @@ load_dir (struct ovl_data *lo, struct ovl_node *n, struct ovl_layer *layer, char
           if (child)
             {
               child->last_layer = it;
-              if (!child->whiteout || it != upper_layer)
+              if (! child->whiteout || it != upper_layer)
                 continue;
               else
                 {
@@ -1722,7 +1699,7 @@ cleanup_layerp (struct ovl_layer **p)
   free_layers (l);
 }
 
-#define cleanup_layer __attribute__((cleanup (cleanup_layerp)))
+#define cleanup_layer __attribute__ ((cleanup (cleanup_layerp)))
 
 static struct ovl_layer *
 read_dirs (struct ovl_data *lo, char *path, bool low, struct ovl_layer *layers)
@@ -1877,14 +1854,14 @@ do_lookup_file (struct ovl_data *lo, fuse_ino_t parent, const char *name)
 
   node_set_name (&key, (char *) name);
   node = hash_lookup (pnode->children, &key);
-  if (node == NULL && !pnode->loaded)
+  if (node == NULL && ! pnode->loaded)
     {
       int ret;
       struct ovl_layer *it;
       struct stat st;
       bool stop_lookup = false;
 
-      for (it = lo->layers; it && !stop_lookup; it = it->next)
+      for (it = lo->layers; it && ! stop_lookup; it = it->next)
         {
           char path[PATH_MAX];
           char whpath[PATH_MAX];
@@ -1895,7 +1872,7 @@ do_lookup_file (struct ovl_data *lo, fuse_ino_t parent, const char *name)
 
           strconcat3 (path, PATH_MAX, pnode->path, "/", name);
 
-          ret = it->ds->statat (it, path, &st, AT_SYMLINK_NOFOLLOW, STATX_TYPE|STATX_MODE|STATX_INO);
+          ret = it->ds->statat (it, path, &st, AT_SYMLINK_NOFOLLOW, STATX_TYPE | STATX_MODE | STATX_INO);
           if (ret < 0)
             {
               int saved_errno = errno;
@@ -1940,7 +1917,7 @@ do_lookup_file (struct ovl_data *lo, fuse_ino_t parent, const char *name)
           if (ret < 0 && errno != ENOENT && errno != ENOTDIR)
             return NULL;
           if (ret == 0)
-              node = make_whiteout_node (path, name);
+            node = make_whiteout_node (path, name);
           else
             {
               wh_name = get_whiteout_name (name, &st);
@@ -1969,7 +1946,7 @@ do_lookup_file (struct ovl_data *lo, fuse_ino_t parent, const char *name)
                   stop_lookup = true;
                 }
             }
-insert_node:
+        insert_node:
           if (insert_node (pnode, node, false) == NULL)
             {
               node_free (node);
@@ -1992,8 +1969,7 @@ ovl_lookup (fuse_req_t req, fuse_ino_t parent, const char *name)
   struct ovl_node *node;
 
   if (UNLIKELY (ovl_debug (req)))
-    fprintf (stderr, "ovl_lookup(parent=%" PRIu64 ", name=%s)\n",
-	     parent, name);
+    fprintf (stderr, "ovl_lookup(parent=%" PRIu64 ", name=%s)\n", parent, name);
 
   memset (&e, 0, sizeof (e));
 
@@ -2204,8 +2180,7 @@ create_missing_whiteouts (struct ovl_data *lo, struct ovl_node *node, const char
 }
 
 static void
-ovl_do_readdir (fuse_req_t req, fuse_ino_t ino, size_t size,
-	       off_t offset, struct fuse_file_info *fi, int plus)
+ovl_do_readdir (fuse_req_t req, fuse_ino_t ino, size_t size, off_t offset, struct fuse_file_info *fi, int plus)
 {
   struct ovl_data *lo = ovl_data (req);
   struct ovl_dirp *d = ovl_dirp (fi);
@@ -2221,83 +2196,82 @@ ovl_do_readdir (fuse_req_t req, fuse_ino_t ino, size_t size,
     }
   p = buffer;
   for (; remaining > 0 && offset < d->tbl_size; offset++)
-      {
-        int ret;
-        size_t entsize;
-        const char *name;
-        struct ovl_node *node = d->tbl[offset];
-        struct fuse_entry_param e;
-        struct stat *st = &e.attr;
+    {
+      int ret;
+      size_t entsize;
+      const char *name;
+      struct ovl_node *node = d->tbl[offset];
+      struct fuse_entry_param e;
+      struct stat *st = &e.attr;
 
-        if (node == NULL || node->whiteout || node->hidden)
-          continue;
+      if (node == NULL || node->whiteout || node->hidden)
+        continue;
 
-        if (offset == 0)
-          name = ".";
-        else if (offset == 1)
-          name = "..";
-        else
-          {
-            if (node->parent != d->parent)
-              continue;
-            name = node->name;
-          }
+      if (offset == 0)
+        name = ".";
+      else if (offset == 1)
+        name = "..";
+      else
+        {
+          if (node->parent != d->parent)
+            continue;
+          name = node->name;
+        }
 
-        if (!plus)
-          {
-            /* From the 'stbuf' argument the st_ino field and bits 12-15 of the
-             * st_mode field are used.  The other fields are ignored.
-             */
-            st->st_ino = node->tmp_ino;
-            st->st_dev = node->tmp_dev;
-            st->st_mode = node->ino->mode;
+      if (! plus)
+        {
+          /* From the 'stbuf' argument the st_ino field and bits 12-15 of the
+           * st_mode field are used.  The other fields are ignored.
+           */
+          st->st_ino = node->tmp_ino;
+          st->st_dev = node->tmp_dev;
+          st->st_mode = node->ino->mode;
 
-            entsize = fuse_add_direntry (req, p, remaining, name, st, offset + 1);
-          }
-        else
-          {
-            if (node_dirp (node))
-              {
-                node = reload_dir (lo, node);
-                if (node == NULL)
-                  {
-                    fuse_reply_err (req, errno);
-                    return;
-                  }
-              }
+          entsize = fuse_add_direntry (req, p, remaining, name, st, offset + 1);
+        }
+      else
+        {
+          if (node_dirp (node))
+            {
+              node = reload_dir (lo, node);
+              if (node == NULL)
+                {
+                  fuse_reply_err (req, errno);
+                  return;
+                }
+            }
 
-            memset (&e, 0, sizeof (e));
-            ret = rpl_stat (req, node, -1, NULL, NULL, st);
-            if (ret < 0)
-              {
-                fuse_reply_err (req, errno);
-                return;
-              }
+          memset (&e, 0, sizeof (e));
+          ret = rpl_stat (req, node, -1, NULL, NULL, st);
+          if (ret < 0)
+            {
+              fuse_reply_err (req, errno);
+              return;
+            }
 
-            e.attr_timeout = get_timeout (lo);
-            e.entry_timeout = get_timeout (lo);
-            e.ino = node_to_inode (node);
-            entsize = fuse_add_direntry_plus (req, p, remaining, name, &e, offset + 1);
-            if (entsize <= remaining)
-              {
-                /* First two entries are . and .. */
-                if (offset >= 2)
-                  node->ino->lookups++;
-              }
-          }
+          e.attr_timeout = get_timeout (lo);
+          e.entry_timeout = get_timeout (lo);
+          e.ino = node_to_inode (node);
+          entsize = fuse_add_direntry_plus (req, p, remaining, name, &e, offset + 1);
+          if (entsize <= remaining)
+            {
+              /* First two entries are . and .. */
+              if (offset >= 2)
+                node->ino->lookups++;
+            }
+        }
 
-        if (entsize > remaining)
-          break;
+      if (entsize > remaining)
+        break;
 
-        p += entsize;
-        remaining -= entsize;
-      }
+      p += entsize;
+      remaining -= entsize;
+    }
   fuse_reply_buf (req, buffer, size - remaining);
 }
 
 static void
-ovl_readdir (fuse_req_t req, fuse_ino_t ino, size_t size,
-	    off_t offset, struct fuse_file_info *fi)
+ovl_readdir (fuse_req_t req, fuse_ino_t ino, size_t size, off_t offset, struct fuse_file_info *fi)
 {
   cleanup_lock int l = enter_big_lock ();
   if (UNLIKELY (ovl_debug (req)))
@@ -2306,8 +2280,7 @@ ovl_readdir (fuse_req_t req, fuse_ino_t ino, size_t size,
 }
 
 static void
-ovl_readdirplus (fuse_req_t req, fuse_ino_t ino, size_t size,
-		off_t offset, struct fuse_file_info *fi)
+ovl_readdirplus (fuse_req_t req, fuse_ino_t ino, size_t size, off_t offset, struct fuse_file_info *fi)
 {
   cleanup_lock int l = enter_big_lock ();
   if (UNLIKELY (ovl_debug (req)))
@@ -2489,8 +2462,7 @@ ovl_access (fuse_req_t req, fuse_ino_t ino, int mask)
   struct ovl_node *n = do_lookup_file (lo, ino, NULL);
 
   if (UNLIKELY (ovl_debug (req)))
-    fprintf (stderr, "ovl_access(ino=%" PRIu64 ", mask=%d)\n",
-	     ino, mask);
+    fprintf (stderr, "ovl_access(ino=%" PRIu64 ", mask=%d)\n", ino, mask);
 
   if ((mask & n->ino->mode) == mask)
     fuse_reply_err (req, 0);
@@ -2595,7 +2567,8 @@ static int create_node_directory (struct ovl_data *lo, struct ovl_node *src);
 
 static int
 create_directory (struct ovl_data *lo, int dirfd, const char *name, const struct timespec *times,
-                  struct ovl_node *parent, int xattr_sfd, uid_t uid, gid_t gid, mode_t mode, bool set_opaque, struct stat *st_out)
+                  struct ovl_node *parent, int xattr_sfd, uid_t uid, gid_t gid, mode_t mode, bool set_opaque,
+                  struct stat *st_out)
 {
   int ret;
   int saved_errno;
@@ -2605,7 +2578,7 @@ create_directory (struct ovl_data *lo, int dirfd, const char *name, const struct
   bool need_rename;
 
   need_rename = set_opaque || times || xattr_sfd >= 0 || uid != lo->uid || gid != lo->gid;
-  if (!need_rename)
+  if (! need_rename)
     {
       /* mkdir can be used directly without a temporary directory in the working directory.  */
       ret = mkdirat (dirfd, name, mode);
@@ -2634,7 +2607,8 @@ create_directory (struct ovl_data *lo, int dirfd, const char *name, const struct
   if (ret < 0)
     goto out;
 
-  if (uid != lo->uid || gid != lo->gid || get_upper_layer (lo)->has_stat_override || get_upper_layer (lo)->has_privileged_stat_override)
+  if (uid != lo->uid || gid != lo->gid || get_upper_layer (lo)->has_stat_override
+      || get_upper_layer (lo)->has_privileged_stat_override)
     {
       ret = do_fchown (lo, dfd, uid, gid, mode);
       if (ret < 0)
@@ -2712,7 +2686,7 @@ create_directory (struct ovl_data *lo, int dirfd, const char *name, const struct
 out:
   saved_errno = errno;
   if (ret < 0)
-      unlinkat (lo->workdir_fd, wd_tmp_file_name, AT_REMOVEDIR);
+    unlinkat (lo->workdir_fd, wd_tmp_file_name, AT_REMOVEDIR);
   errno = saved_errno;
 
   return ret;
@@ -2732,7 +2706,7 @@ create_node_directory (struct ovl_data *lo, struct ovl_node *src)
   if (src->layer == get_upper_layer (lo))
     return 0;
 
-  ret = sfd = src->layer->ds->openat (src->layer, src->path, O_RDONLY|O_NONBLOCK, 0755);
+  ret = sfd = src->layer->ds->openat (src->layer, src->path, O_RDONLY | O_NONBLOCK, 0755);
   if (ret < 0)
     return ret;
 
@@ -2743,7 +2717,8 @@ create_node_directory (struct ovl_data *lo, struct ovl_node *src)
   times[0] = st.st_atim;
   times[1] = st.st_mtim;
 
-  ret = create_directory (lo, get_upper_layer (lo)->fd, src->path, times, src->parent, sfd, st.st_uid, st.st_gid, st.st_mode, false, NULL);
+  ret = create_directory (lo, get_upper_layer (lo)->fd, src->path, times, src->parent, sfd, st.st_uid, st.st_gid,
+                          st.st_mode, false, NULL);
   if (ret == 0)
     {
       src->layer = get_upper_layer (lo);
@@ -2850,15 +2825,16 @@ copyup (struct ovl_data *lo, struct ovl_node *node)
       goto success;
     }
 
-  ret = sfd = node->layer->ds->openat (node->layer, node->path, O_RDONLY|O_NONBLOCK, 0);
+  ret = sfd = node->layer->ds->openat (node->layer, node->path, O_RDONLY | O_NONBLOCK, 0);
   if (sfd < 0)
     goto exit;
 
-  ret = dfd = TEMP_FAILURE_RETRY (safe_openat (lo->workdir_fd, wd_tmp_file_name, O_CREAT|O_WRONLY, st.st_mode));
+  ret = dfd = TEMP_FAILURE_RETRY (safe_openat (lo->workdir_fd, wd_tmp_file_name, O_CREAT | O_WRONLY, st.st_mode));
   if (dfd < 0)
     goto exit;
 
-  if (st.st_uid != lo->uid || st.st_gid != lo->gid || get_upper_layer (lo)->has_stat_override || get_upper_layer (lo)->has_privileged_stat_override)
+  if (st.st_uid != lo->uid || st.st_gid != lo->gid || get_upper_layer (lo)->has_stat_override
+      || get_upper_layer (lo)->has_privileged_stat_override)
     {
       ret = do_fchown (lo, dfd, st.st_uid, st.st_gid, st.st_mode);
       if (ret < 0)
@@ -2898,7 +2874,7 @@ copyup (struct ovl_data *lo, struct ovl_node *node)
               break;
             }
           copied += n;
-	}
+        }
       data_copied = true;
     }
 #endif
@@ -2939,12 +2915,12 @@ copyup (struct ovl_data *lo, struct ovl_node *node)
         goto exit;
     }
 
- success:
+success:
   ret = 0;
 
   node->layer = get_upper_layer (lo);
 
- exit:
+exit:
   saved_errno = errno;
   if (ret < 0)
     unlinkat (lo->workdir_fd, wd_tmp_file_name, 0);
@@ -3155,8 +3131,7 @@ ovl_unlink (fuse_req_t req, fuse_ino_t parent, const char *name)
 {
   cleanup_lock int l = enter_big_lock ();
   if (UNLIKELY (ovl_debug (req)))
-    fprintf (stderr, "ovl_unlink(parent=%" PRIu64 ", name=%s)\n",
-	     parent, name);
+    fprintf (stderr, "ovl_unlink(parent=%" PRIu64 ", name=%s)\n", parent, name);
   do_rm (req, parent, name, false);
 }
 
@@ -3165,8 +3140,7 @@ ovl_rmdir (fuse_req_t req, fuse_ino_t parent, const char *name)
 {
   cleanup_lock int l = enter_big_lock ();
   if (UNLIKELY (ovl_debug (req)))
-    fprintf (stderr, "ovl_rmdir(parent=%" PRIu64 ", name=%s)\n",
-	     parent, name);
+    fprintf (stderr, "ovl_rmdir(parent=%" PRIu64 ", name=%s)\n", parent, name);
   do_rm (req, parent, name, true);
 }
 
@@ -3189,8 +3163,7 @@ direct_setxattr (struct ovl_layer *l, const char *path, const char *name, const 
 }
 
 static void
-ovl_setxattr (fuse_req_t req, fuse_ino_t ino, const char *name,
-             const char *value, size_t size, int flags)
+ovl_setxattr (fuse_req_t req, fuse_ino_t ino, const char *name, const char *value, size_t size, int flags)
 {
   cleanup_lock int l = enter_big_lock ();
   struct ovl_data *lo = ovl_data (req);
@@ -3198,8 +3171,8 @@ ovl_setxattr (fuse_req_t req, fuse_ino_t ino, const char *name,
   int ret;
 
   if (UNLIKELY (ovl_debug (req)))
-    fprintf (stderr, "ovl_setxattr(ino=%" PRIu64 "s, name=%s, value=%s, size=%zu, flags=%d)\n", ino, name,
-             value, size, flags);
+    fprintf (stderr, "ovl_setxattr(ino=%" PRIu64 "s, name=%s, value=%s, size=%zu, flags=%d)\n", ino, name, value, size,
+             flags);
 
   if (lo->disable_xattrs)
     {
@@ -3314,7 +3287,7 @@ direct_create_file (struct ovl_layer *l, int dirfd, const char *path, uid_t uid,
   int ret;
 
   /* try to create directly the file if it doesn't need to be chowned.  */
-  if (uid == lo->uid && gid == lo->gid && !l->has_stat_override && !l->has_privileged_stat_override)
+  if (uid == lo->uid && gid == lo->gid && ! l->has_stat_override && ! l->has_privileged_stat_override)
     {
       ret = TEMP_FAILURE_RETRY (safe_openat (get_upper_layer (lo)->fd, path, flags, mode));
       if (ret >= 0)
@@ -3349,7 +3322,8 @@ direct_create_file (struct ovl_layer *l, int dirfd, const char *path, uid_t uid,
 }
 
 static int
-ovl_do_open (fuse_req_t req, fuse_ino_t parent, const char *name, int flags, mode_t mode, struct ovl_node **retnode, struct stat *st)
+ovl_do_open (fuse_req_t req, fuse_ino_t parent, const char *name, int flags, mode_t mode, struct ovl_node **retnode,
+             struct stat *st)
 {
   struct ovl_data *lo = ovl_data (req);
   struct ovl_node *n;
@@ -3379,7 +3353,7 @@ ovl_do_open (fuse_req_t req, fuse_ino_t parent, const char *name, int flags, mod
   if (name && has_prefix (name, ".wh."))
     {
       errno = EINVAL;
-      return - 1;
+      return -1;
     }
 
   n = do_lookup_file (lo, parent, name);
@@ -3387,7 +3361,7 @@ ovl_do_open (fuse_req_t req, fuse_ino_t parent, const char *name, int flags, mod
     {
       n = NULL;
     }
-  if (n && !n->whiteout && (flags & O_CREAT))
+  if (n && ! n->whiteout && (flags & O_CREAT))
     {
       errno = EEXIST;
       return -1;
@@ -3398,7 +3372,7 @@ ovl_do_open (fuse_req_t req, fuse_ino_t parent, const char *name, int flags, mod
       is_whiteout = true;
     }
 
-  if (!n)
+  if (! n)
     {
       int ret;
       struct ovl_node *p;
@@ -3423,7 +3397,7 @@ ovl_do_open (fuse_req_t req, fuse_ino_t parent, const char *name, int flags, mod
       if (p == NULL)
         return -1;
 
-      if (p->loaded && !is_whiteout)
+      if (p->loaded && ! is_whiteout)
         need_delete_whiteout = false;
 
       sprintf (wd_tmp_file_name, "%lu", get_next_wd_counter ());
@@ -3435,7 +3409,8 @@ ovl_do_open (fuse_req_t req, fuse_ino_t parent, const char *name, int flags, mod
       uid = get_uid (lo, ctx->uid);
       gid = get_gid (lo, ctx->gid);
 
-      fd = direct_create_file (get_upper_layer (lo), get_upper_layer (lo)->fd, path, uid, gid, flags, mode & ~ctx->umask);
+      fd = direct_create_file (get_upper_layer (lo), get_upper_layer (lo)->fd, path, uid, gid, flags,
+                               mode & ~ctx->umask);
       if (fd < 0)
         return fd;
 
@@ -3454,7 +3429,7 @@ ovl_do_open (fuse_req_t req, fuse_ino_t parent, const char *name, int flags, mod
           errno = ENOMEM;
           return -1;
         }
-      if (!is_whiteout)
+      if (! is_whiteout)
         n->last_layer = get_upper_layer (lo);
 
       n = insert_node (p, n, true);
@@ -3496,13 +3471,14 @@ ovl_do_open (fuse_req_t req, fuse_ino_t parent, const char *name, int flags, mod
 }
 
 static void
-ovl_read (fuse_req_t req, fuse_ino_t ino, size_t size,
-	 off_t offset, struct fuse_file_info *fi)
+ovl_read (fuse_req_t req, fuse_ino_t ino, size_t size, off_t offset, struct fuse_file_info *fi)
 {
   struct fuse_bufvec buf = FUSE_BUFVEC_INIT (size);
   if (UNLIKELY (ovl_debug (req)))
-    fprintf (stderr, "ovl_read(ino=%" PRIu64 ", size=%zd, "
-	     "off=%lu)\n", ino, size, (unsigned long) offset);
+    fprintf (stderr,
+             "ovl_read(ino=%" PRIu64 ", size=%zd, "
+             "off=%lu)\n",
+             ino, size, (unsigned long) offset);
   buf.buf[0].flags = FUSE_BUF_IS_FD | FUSE_BUF_FD_SEEK | FUSE_BUF_FD_RETRY;
   buf.buf[0].fd = fi->fh;
   buf.buf[0].pos = offset;
@@ -3510,9 +3486,7 @@ ovl_read (fuse_req_t req, fuse_ino_t ino, size_t size,
 }
 
 static void
-ovl_write_buf (fuse_req_t req, fuse_ino_t ino,
-	      struct fuse_bufvec *in_buf, off_t off,
-	      struct fuse_file_info *fi)
+ovl_write_buf (fuse_req_t req, fuse_ino_t ino, struct fuse_bufvec *in_buf, off_t off, struct fuse_file_info *fi)
 {
   struct ovl_data *lo = ovl_data (req);
   ssize_t res;
@@ -3525,8 +3499,8 @@ ovl_write_buf (fuse_req_t req, fuse_ino_t ino,
   out_buf.buf[0].pos = off;
 
   if (UNLIKELY (ovl_debug (req)))
-    fprintf (stderr, "ovl_write_buf(ino=%" PRIu64 ", size=%zd, off=%lu, fd=%d)\n",
-	     ino, out_buf.buf[0].size, (unsigned long) off, (int) fi->fh);
+    fprintf (stderr, "ovl_write_buf(ino=%" PRIu64 ", size=%zd, off=%lu, fd=%d)\n", ino, out_buf.buf[0].size,
+             (unsigned long) off, (int) fi->fh);
 
   inode = lookup_inode (lo, ino);
 
@@ -3535,7 +3509,7 @@ ovl_write_buf (fuse_req_t req, fuse_ino_t ino,
   saved_errno = errno;
 
   /* if it is a writepage request, make sure to restore the setuid bit.  */
-  if (fi->writepage && (inode->mode & (S_ISUID|S_ISGID)))
+  if (fi->writepage && (inode->mode & (S_ISUID | S_ISGID)))
     {
       if (do_fchmod (lo, fi->fh, inode->mode) < 0)
         {
@@ -3583,8 +3557,7 @@ do_getattr (fuse_req_t req, struct fuse_entry_param *e, struct ovl_node *node, i
 }
 
 static void
-ovl_create (fuse_req_t req, fuse_ino_t parent, const char *name,
-	   mode_t mode, struct fuse_file_info *fi)
+ovl_create (fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode, struct fuse_file_info *fi)
 {
   cleanup_lock int l = enter_big_lock ();
   cleanup_close int fd = -1;
@@ -3593,8 +3566,7 @@ ovl_create (fuse_req_t req, fuse_ino_t parent, const char *name,
   struct stat st;
 
   if (UNLIKELY (ovl_debug (req)))
-    fprintf (stderr, "ovl_create(parent=%" PRIu64 ", name=%s)\n",
-	     parent, name);
+    fprintf (stderr, "ovl_create(parent=%" PRIu64 ", name=%s)\n", parent, name);
 
   fi->flags = fi->flags | O_CREAT;
 
@@ -3612,7 +3584,7 @@ ovl_create (fuse_req_t req, fuse_ino_t parent, const char *name,
     }
 
   fi->fh = fd;
-  fd = -1;  /* Do not clean it up.  */
+  fd = -1; /* Do not clean it up.  */
 
   node->ino->lookups++;
   fuse_reply_create (req, &e, fi);
@@ -3637,7 +3609,7 @@ ovl_open (fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
   fi->fh = fd;
   if (get_timeout (lo) > 0)
     fi->keep_cache = 1;
-  fd = -1;  /* Do not clean it up.  */
+  fd = -1; /* Do not clean it up.  */
   fuse_reply_open (req, fi);
 }
 
@@ -3713,7 +3685,7 @@ ovl_setattr (fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set, stru
     gid = get_gid (lo, attr->st_gid);
 
   if (fi != NULL)
-    fd = fi->fh;  // use existing fd if fuse_file_info is available
+    fd = fi->fh; // use existing fd if fuse_file_info is available
   else
     {
       mode_t mode = node->ino->mode;
@@ -3735,7 +3707,8 @@ ovl_setattr (fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set, stru
       switch (mode & S_IFMT)
         {
         case S_IFREG:
-          cleaned_up_fd = fd = TEMP_FAILURE_RETRY (safe_openat (dirfd, node->path, O_NOFOLLOW|O_NONBLOCK|(to_set & FUSE_SET_ATTR_SIZE ? O_WRONLY : 0), 0));
+          cleaned_up_fd = fd = TEMP_FAILURE_RETRY (safe_openat (
+              dirfd, node->path, O_NOFOLLOW | O_NONBLOCK | (to_set & FUSE_SET_ATTR_SIZE ? O_WRONLY : 0), 0));
           if (fd < 0)
             {
               fuse_reply_err (req, errno);
@@ -3744,7 +3717,7 @@ ovl_setattr (fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set, stru
           break;
 
         case S_IFDIR:
-          cleaned_up_fd = fd = TEMP_FAILURE_RETRY (safe_openat (dirfd, node->path, O_NOFOLLOW|O_NONBLOCK, 0));
+          cleaned_up_fd = fd = TEMP_FAILURE_RETRY (safe_openat (dirfd, node->path, O_NOFOLLOW | O_NONBLOCK, 0));
           if (fd < 0)
             {
               if (errno != ELOOP)
@@ -3756,7 +3729,7 @@ ovl_setattr (fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set, stru
           break;
 
         case S_IFLNK:
-          cleaned_up_fd = TEMP_FAILURE_RETRY (safe_openat (dirfd, node->path, O_PATH|O_NOFOLLOW|O_NONBLOCK, 0));
+          cleaned_up_fd = TEMP_FAILURE_RETRY (safe_openat (dirfd, node->path, O_PATH | O_NOFOLLOW | O_NONBLOCK, 0));
           if (cleaned_up_fd < 0)
             {
               fuse_reply_err (req, errno);
@@ -3890,7 +3863,7 @@ ovl_link (fuse_req_t req, fuse_ino_t ino, fuse_ino_t newparent, const char *newn
     }
 
   destnode = do_lookup_file (lo, newparent, newname);
-  if (destnode && !destnode->whiteout)
+  if (destnode && ! destnode->whiteout)
     {
       fuse_reply_err (req, EEXIST);
       return;
@@ -3925,13 +3898,14 @@ ovl_link (fuse_req_t req, fuse_ino_t ino, fuse_ino_t newparent, const char *newn
       return;
     }
 
-  node = make_ovl_node (lo, path, get_upper_layer (lo), newname, node->tmp_ino, node->tmp_dev, false, newparentnode, lo->fast_ino_check);
+  node = make_ovl_node (lo, path, get_upper_layer (lo), newname, node->tmp_ino, node->tmp_dev, false, newparentnode,
+                        lo->fast_ino_check);
   if (node == NULL)
     {
       fuse_reply_err (req, ENOMEM);
       return;
     }
-  if (destnode && !destnode->whiteout)
+  if (destnode && ! destnode->whiteout)
     node->last_layer = get_upper_layer (lo);
 
   node = insert_node (newparentnode, node, true);
@@ -4022,7 +3996,7 @@ ovl_symlink (fuse_req_t req, const char *link, fuse_ino_t parent, const char *na
     }
 
   node = do_lookup_file (lo, parent, name);
-  if (node != NULL && !node->whiteout)
+  if (node != NULL && ! node->whiteout)
     {
       fuse_reply_err (req, EEXIST);
       return;
@@ -4083,8 +4057,7 @@ ovl_symlink (fuse_req_t req, const char *link, fuse_ino_t parent, const char *na
 }
 
 static void
-ovl_rename_exchange (fuse_req_t req, fuse_ino_t parent, const char *name,
-                     fuse_ino_t newparent, const char *newname,
+ovl_rename_exchange (fuse_req_t req, fuse_ino_t parent, const char *name, fuse_ino_t newparent, const char *newname,
                      unsigned int flags)
 {
   struct ovl_node *pnode, *node, *destnode, *destpnode;
@@ -4160,7 +4133,6 @@ ovl_rename_exchange (fuse_req_t req, fuse_ino_t parent, const char *name,
   if (destnode == NULL)
     goto error;
 
-
   ret = direct_renameat2 (srcfd, name, destfd, newname, flags);
   if (ret < 0)
     goto error;
@@ -4199,16 +4171,15 @@ ovl_rename_exchange (fuse_req_t req, fuse_ino_t parent, const char *name,
   ret = 0;
   goto cleanup;
 
- error:
+error:
   ret = -1;
 
- cleanup:
+cleanup:
   fuse_reply_err (req, ret == 0 ? 0 : errno);
 }
 
 static void
-ovl_rename_direct (fuse_req_t req, fuse_ino_t parent, const char *name,
-                   fuse_ino_t newparent, const char *newname,
+ovl_rename_direct (fuse_req_t req, fuse_ino_t parent, const char *name, fuse_ino_t newparent, const char *newname,
                    unsigned int flags)
 {
   struct ovl_node *pnode, *node, *destnode, *destpnode;
@@ -4272,7 +4243,7 @@ ovl_rename_direct (fuse_req_t req, fuse_ino_t parent, const char *name,
   if (node == NULL)
     goto error;
 
-  if (flags & RENAME_NOREPLACE && destnode && !destnode->whiteout)
+  if (flags & RENAME_NOREPLACE && destnode && ! destnode->whiteout)
     {
       errno = EEXIST;
       goto error;
@@ -4282,12 +4253,12 @@ ovl_rename_direct (fuse_req_t req, fuse_ino_t parent, const char *name,
     {
       size_t destnode_whiteouts = 0;
 
-      if (!destnode->whiteout && destnode->tmp_ino == node->tmp_ino && destnode->tmp_dev == node->tmp_dev)
+      if (! destnode->whiteout && destnode->tmp_ino == node->tmp_ino && destnode->tmp_dev == node->tmp_dev)
         goto error;
 
       destnode_is_whiteout = destnode->whiteout;
 
-      if (!destnode->whiteout && node_dirp (destnode))
+      if (! destnode->whiteout && node_dirp (destnode))
         {
           destnode = reload_dir (lo, destnode);
           if (destnode == NULL)
@@ -4313,7 +4284,7 @@ ovl_rename_direct (fuse_req_t req, fuse_ino_t parent, const char *name,
           destnode = NULL;
         }
 
-      if (destnode && !destnode_is_whiteout)
+      if (destnode && ! destnode_is_whiteout)
         {
           /* If the node is still accessible then be sure we
              can write to it.  Fix it to be done when a write is
@@ -4334,7 +4305,7 @@ ovl_rename_direct (fuse_req_t req, fuse_ino_t parent, const char *name,
    so that with one operation we get both the rename and the whiteout created.  */
   if (destnode_is_whiteout)
     {
-      ret = direct_renameat2 (srcfd, name, destfd, newname, flags|RENAME_EXCHANGE);
+      ret = direct_renameat2 (srcfd, name, destfd, newname, flags | RENAME_EXCHANGE);
       if (ret == 0)
         goto done;
 
@@ -4354,12 +4325,10 @@ ovl_rename_direct (fuse_req_t req, fuse_ino_t parent, const char *name,
 
   /* Try to create the whiteout atomically, if it fails do the
      rename+mknod separately.  */
-  ret = direct_renameat2 (srcfd, name, destfd,
-                          newname, flags|RENAME_WHITEOUT);
+  ret = direct_renameat2 (srcfd, name, destfd, newname, flags | RENAME_WHITEOUT);
   if (ret < 0)
     {
-      ret = direct_renameat2 (srcfd, name, destfd,
-                              newname, flags);
+      ret = direct_renameat2 (srcfd, name, destfd, newname, flags);
       if (ret < 0)
         goto error;
 
@@ -4371,7 +4340,7 @@ ovl_rename_direct (fuse_req_t req, fuse_ino_t parent, const char *name,
   if (delete_whiteout (lo, destfd, NULL, newname) < 0)
     goto error;
 
- done:
+done:
   hash_delete (pnode->children, node);
 
   free (node->name);
@@ -4390,10 +4359,10 @@ ovl_rename_direct (fuse_req_t req, fuse_ino_t parent, const char *name,
   ret = 0;
   goto cleanup;
 
- error:
+error:
   ret = -1;
 
- cleanup:
+cleanup:
   saved_errno = errno;
   if (srcfd >= 0)
     close (srcfd);
@@ -4405,13 +4374,13 @@ ovl_rename_direct (fuse_req_t req, fuse_ino_t parent, const char *name,
 }
 
 static void
-ovl_rename (fuse_req_t req, fuse_ino_t parent, const char *name,
-           fuse_ino_t newparent, const char *newname,
-           unsigned int flags)
+ovl_rename (fuse_req_t req, fuse_ino_t parent, const char *name, fuse_ino_t newparent, const char *newname,
+            unsigned int flags)
 {
   cleanup_lock int l = enter_big_lock ();
   if (UNLIKELY (ovl_debug (req)))
-    fprintf (stderr, "ovl_rename(ino=%" PRIu64 "s, name=%s , ino=%" PRIu64 "s, name=%s)\n", parent, name, newparent, newname);
+    fprintf (stderr, "ovl_rename(ino=%" PRIu64 "s, name=%s , ino=%" PRIu64 "s, name=%s)\n", parent, name, newparent,
+             newname);
 
   if (flags & RENAME_EXCHANGE)
     ovl_rename_exchange (req, parent, name, newparent, newname, flags);
@@ -4525,7 +4494,7 @@ hide_all (struct ovl_data *lo, struct ovl_node *node)
 
       if (ret < 0)
         {
-          free(nodes);
+          free (nodes);
           return ret;
         }
     }
@@ -4548,13 +4517,12 @@ ovl_mknod (fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode, dev
   char wd_tmp_file_name[32];
 
   if (UNLIKELY (ovl_debug (req)))
-    fprintf (stderr, "ovl_mknod(ino=%" PRIu64 ", name=%s, mode=%d, rdev=%lu)\n",
-	     parent, name, mode, rdev);
+    fprintf (stderr, "ovl_mknod(ino=%" PRIu64 ", name=%s, mode=%d, rdev=%lu)\n", parent, name, mode, rdev);
 
   mode = mode & ~ctx->umask;
 
   node = do_lookup_file (lo, parent, name);
-  if (node != NULL && !node->whiteout)
+  if (node != NULL && ! node->whiteout)
     {
       fuse_reply_err (req, EEXIST);
       return;
@@ -4658,11 +4626,10 @@ ovl_mkdir (fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode)
   cleanup_lock int l = enter_big_lock ();
 
   if (UNLIKELY (ovl_debug (req)))
-    fprintf (stderr, "ovl_mkdir(ino=%" PRIu64 ", name=%s, mode=%d)\n",
-	     parent, name, mode);
+    fprintf (stderr, "ovl_mkdir(ino=%" PRIu64 ", name=%s, mode=%d)\n", parent, name, mode);
 
   node = do_lookup_file (lo, parent, name);
-  if (node != NULL && !node->whiteout)
+  if (node != NULL && ! node->whiteout)
     {
       fuse_reply_err (req, EEXIST);
       return;
@@ -4694,9 +4661,8 @@ ovl_mkdir (fuse_req_t req, fuse_ino_t parent, const char *name, mode_t mode)
       return;
     }
 
-  ret = create_directory (lo, get_upper_layer (lo)->fd, path, NULL, pnode, -1,
-                          get_uid (lo, ctx->uid), get_gid (lo, ctx->gid), mode & ~ctx->umask,
-                          true, &st);
+  ret = create_directory (lo, get_upper_layer (lo)->fd, path, NULL, pnode, -1, get_uid (lo, ctx->uid),
+                          get_gid (lo, ctx->gid), mode & ~ctx->umask, true, &st);
   if (ret < 0)
     {
       fuse_reply_err (req, errno);
@@ -4769,9 +4735,9 @@ direct_fsync (struct ovl_layer *l, int fd, const char *path, int datasync)
 
   if (fd < 0)
     {
-      cfd = safe_openat (l->fd, path, O_NOFOLLOW|O_DIRECTORY, 0);
+      cfd = safe_openat (l->fd, path, O_NOFOLLOW | O_DIRECTORY, 0);
       if (cfd < 0)
-          return cfd;
+        return cfd;
       fd = cfd;
     }
 
@@ -4788,7 +4754,7 @@ do_fsync (fuse_req_t req, fuse_ino_t ino, int datasync, int fd)
   cleanup_lock int l = 0;
   char path[PATH_MAX];
 
-  if (!lo->fsync)
+  if (! lo->fsync)
     {
       fuse_reply_err (req, ENOSYS);
       return;
@@ -4831,8 +4797,7 @@ static void
 ovl_fsync (fuse_req_t req, fuse_ino_t ino, int datasync, struct fuse_file_info *fi)
 {
   if (UNLIKELY (ovl_debug (req)))
-    fprintf (stderr, "ovl_fsync(ino=%" PRIu64 ", datasync=%d, fi=%p)\n",
-             ino, datasync, fi);
+    fprintf (stderr, "ovl_fsync(ino=%" PRIu64 ", datasync=%d, fi=%p)\n", ino, datasync, fi);
 
   return do_fsync (req, ino, datasync, fi->fh);
 }
@@ -4841,8 +4806,7 @@ static void
 ovl_fsyncdir (fuse_req_t req, fuse_ino_t ino, int datasync, struct fuse_file_info *fi)
 {
   if (UNLIKELY (ovl_debug (req)))
-    fprintf (stderr, "ovl_fsyncdir(ino=%" PRIu64 ", datasync=%d, fi=%p)\n",
-             ino, datasync, fi);
+    fprintf (stderr, "ovl_fsyncdir(ino=%" PRIu64 ", datasync=%d, fi=%p)\n", ino, datasync, fi);
 
   return do_fsync (req, ino, datasync, -1);
 }
@@ -4854,8 +4818,7 @@ direct_ioctl (struct ovl_layer *l, int fd, int cmd, unsigned long *r)
 }
 
 static void
-ovl_ioctl (fuse_req_t req, fuse_ino_t ino, int cmd, void *arg,
-           struct fuse_file_info *fi, unsigned int flags,
+ovl_ioctl (fuse_req_t req, fuse_ino_t ino, int cmd, void *arg, struct fuse_file_info *fi, unsigned int flags,
            const void *in_buf, size_t in_bufsz, size_t out_bufsz)
 {
   cleanup_lock int l = enter_big_lock ();
@@ -4872,8 +4835,9 @@ ovl_ioctl (fuse_req_t req, fuse_ino_t ino, int cmd, void *arg,
     }
 
   if (UNLIKELY (ovl_debug (req)))
-    fprintf (stderr, "ovl_ioctl(ino=%" PRIu64 ", cmd=%d, arg=%p, fi=%p, flags=%d, buf=%p, in_bufsz=%zu, out_bufsz=%zu)\n",
-             ino, cmd, arg, fi, flags, in_buf, in_bufsz, out_bufsz);
+    fprintf (stderr,
+             "ovl_ioctl(ino=%" PRIu64 ", cmd=%d, arg=%p, fi=%p, flags=%d, buf=%p, in_bufsz=%zu, out_bufsz=%zu)\n", ino,
+             cmd, arg, fi, flags, in_buf, in_bufsz, out_bufsz);
 
   node = do_lookup_file (lo, ino, NULL);
   if (node == NULL || node->whiteout)
@@ -4899,17 +4863,17 @@ ovl_ioctl (fuse_req_t req, fuse_ino_t ino, int cmd, void *arg,
           return;
         }
       if (in_bufsz >= sizeof (r))
-          r = *(unsigned long *) in_buf;
+        r = *(unsigned long *) in_buf;
       break;
 
     default:
-        fuse_reply_err (req, ENOSYS);
-        return;
+      fuse_reply_err (req, ENOSYS);
+      return;
     }
 
   if (fd < 0)
     {
-      fd = cleaned_fd = node->layer->ds->openat (node->layer, node->path, O_RDONLY|O_NONBLOCK, 0755);
+      fd = cleaned_fd = node->layer->ds->openat (node->layer, node->path, O_RDONLY | O_NONBLOCK, 0755);
       if (fd < 0)
         {
           fuse_reply_err (req, errno);
@@ -4942,8 +4906,8 @@ ovl_fallocate (fuse_req_t req, fuse_ino_t ino, int mode, off_t offset, off_t len
   int ret;
 
   if (UNLIKELY (ovl_debug (req)))
-    fprintf (stderr, "ovl_fallocate(ino=%" PRIu64 ", mode=%d, offset=%lo, length=%lu, fi=%p)\n",
-             ino, mode, offset, length, fi);
+    fprintf (stderr, "ovl_fallocate(ino=%" PRIu64 ", mode=%d, offset=%lo, length=%lu, fi=%p)\n", ino, mode, offset,
+             length, fi);
 
   node = do_lookup_file (lo, ino, NULL);
   if (node == NULL || node->whiteout)
@@ -4960,7 +4924,7 @@ ovl_fallocate (fuse_req_t req, fuse_ino_t ino, int mode, off_t offset, off_t len
     }
 
   dirfd = node_dirfd (node);
-  fd = safe_openat (dirfd, node->path, O_NONBLOCK|O_NOFOLLOW|O_WRONLY, 0);
+  fd = safe_openat (dirfd, node->path, O_NONBLOCK | O_NOFOLLOW | O_WRONLY, 0);
   if (fd < 0)
     {
       fuse_reply_err (req, errno);
@@ -4976,15 +4940,15 @@ ovl_fallocate (fuse_req_t req, fuse_ino_t ino, int mode, off_t offset, off_t len
 #ifdef HAVE_COPY_FILE_RANGE
 
 static ssize_t
-direct_copy_file_range (struct ovl_layer *l, int fd_in, off_t *off_in,
-                        int fd_out, off_t *off_out,
-                        size_t len, unsigned int flags)
+direct_copy_file_range (struct ovl_layer *l, int fd_in, off_t *off_in, int fd_out, off_t *off_out, size_t len,
+                        unsigned int flags)
 {
   return copy_file_range (fd_in, off_in, fd_out, off_out, len, flags);
 }
 
 static void
-ovl_copy_file_range (fuse_req_t req, fuse_ino_t ino_in, off_t off_in, struct fuse_file_info *fi_in, fuse_ino_t ino_out, off_t off_out, struct fuse_file_info *fi_out, size_t len, int flags)
+ovl_copy_file_range (fuse_req_t req, fuse_ino_t ino_in, off_t off_in, struct fuse_file_info *fi_in, fuse_ino_t ino_out,
+                     off_t off_out, struct fuse_file_info *fi_out, size_t len, int flags)
 {
   cleanup_lock int l = enter_big_lock ();
   struct ovl_data *lo = ovl_data (req);
@@ -4994,7 +4958,9 @@ ovl_copy_file_range (fuse_req_t req, fuse_ino_t ino_in, off_t off_in, struct fus
   ssize_t ret;
 
   if (UNLIKELY (ovl_debug (req)))
-    fprintf (stderr, "ovl_copy_file_range(ino_in=%" PRIu64 ", off_in=%lo, fi_in=%p, ino_out=%" PRIu64 ", off_out=%lo, fi_out=%p, size=%zu, flags=%d)\n",
+    fprintf (stderr,
+             "ovl_copy_file_range(ino_in=%" PRIu64 ", off_in=%lo, fi_in=%p, ino_out=%" PRIu64
+             ", off_out=%lo, fi_out=%p, size=%zu, flags=%d)\n",
              ino_in, off_in, fi_in, ino_out, off_out, fi_out, len, flags);
 
   node = do_lookup_file (lo, ino_in, NULL);
@@ -5018,14 +4984,14 @@ ovl_copy_file_range (fuse_req_t req, fuse_ino_t ino_in, off_t off_in, struct fus
       return;
     }
 
-  fd = node->layer->ds->openat (node->layer, node->path, O_NONBLOCK|O_NOFOLLOW|O_RDONLY, 0755);
+  fd = node->layer->ds->openat (node->layer, node->path, O_NONBLOCK | O_NOFOLLOW | O_RDONLY, 0755);
   if (fd < 0)
     {
       fuse_reply_err (req, errno);
       return;
     }
 
-  fd_dest = TEMP_FAILURE_RETRY (safe_openat (node_dirfd (dnode), dnode->path, O_NONBLOCK|O_NOFOLLOW|O_WRONLY, 0));
+  fd_dest = TEMP_FAILURE_RETRY (safe_openat (node_dirfd (dnode), dnode->path, O_NONBLOCK | O_NOFOLLOW | O_WRONLY, 0));
   if (fd_dest < 0)
     {
       fuse_reply_err (req, errno);
@@ -5042,45 +5008,44 @@ ovl_copy_file_range (fuse_req_t req, fuse_ino_t ino_in, off_t off_in, struct fus
 }
 #endif
 
-static struct fuse_lowlevel_ops ovl_oper =
-  {
-   .statfs = ovl_statfs,
-   .access = ovl_access,
-   .getxattr = ovl_getxattr,
-   .removexattr = ovl_removexattr,
-   .setxattr = ovl_setxattr,
-   .listxattr = ovl_listxattr,
-   .init = ovl_init,
-   .lookup = ovl_lookup,
-   .forget = ovl_forget,
-   .forget_multi = ovl_forget_multi,
-   .getattr = ovl_getattr,
-   .readlink = ovl_readlink,
-   .opendir = ovl_opendir,
-   .readdir = ovl_readdir,
-   .readdirplus = ovl_readdirplus,
-   .releasedir = ovl_releasedir,
-   .create = ovl_create,
-   .open = ovl_open,
-   .release = ovl_release,
-   .read = ovl_read,
-   .write_buf = ovl_write_buf,
-   .unlink = ovl_unlink,
-   .rmdir = ovl_rmdir,
-   .setattr = ovl_setattr,
-   .symlink = ovl_symlink,
-   .rename = ovl_rename,
-   .mkdir = ovl_mkdir,
-   .mknod = ovl_mknod,
-   .link = ovl_link,
-   .fsync = ovl_fsync,
-   .fsyncdir = ovl_fsyncdir,
-   .ioctl = ovl_ioctl,
-   .fallocate = ovl_fallocate,
+static struct fuse_lowlevel_ops ovl_oper = {
+  .statfs = ovl_statfs,
+  .access = ovl_access,
+  .getxattr = ovl_getxattr,
+  .removexattr = ovl_removexattr,
+  .setxattr = ovl_setxattr,
+  .listxattr = ovl_listxattr,
+  .init = ovl_init,
+  .lookup = ovl_lookup,
+  .forget = ovl_forget,
+  .forget_multi = ovl_forget_multi,
+  .getattr = ovl_getattr,
+  .readlink = ovl_readlink,
+  .opendir = ovl_opendir,
+  .readdir = ovl_readdir,
+  .readdirplus = ovl_readdirplus,
+  .releasedir = ovl_releasedir,
+  .create = ovl_create,
+  .open = ovl_open,
+  .release = ovl_release,
+  .read = ovl_read,
+  .write_buf = ovl_write_buf,
+  .unlink = ovl_unlink,
+  .rmdir = ovl_rmdir,
+  .setattr = ovl_setattr,
+  .symlink = ovl_symlink,
+  .rename = ovl_rename,
+  .mkdir = ovl_mkdir,
+  .mknod = ovl_mknod,
+  .link = ovl_link,
+  .fsync = ovl_fsync,
+  .fsyncdir = ovl_fsyncdir,
+  .ioctl = ovl_ioctl,
+  .fallocate = ovl_fallocate,
 #if HAVE_COPY_FILE_RANGE && HAVE_FUSE_COPY_FILE_RANGE
-   .copy_file_range = ovl_copy_file_range,
+  .copy_file_range = ovl_copy_file_range,
 #endif
-  };
+};
 
 static int
 fuse_opt_proc (void *data, const char *arg, int key, struct fuse_args *outargs)
@@ -5097,8 +5062,7 @@ fuse_opt_proc (void *data, const char *arg, int key, struct fuse_args *outargs)
     return 1;
   if (strcmp (arg, "-V") == 0)
     return 1;
-  if ((strcmp (arg, "--debug") == 0) || (strcmp (arg, "-d") == 0) ||
-      (strcmp (arg, "debug") == 0))
+  if ((strcmp (arg, "--debug") == 0) || (strcmp (arg, "-d") == 0) || (strcmp (arg, "debug") == 0))
     {
       ovl_data->debug = 1;
       return 1;
@@ -5169,7 +5133,7 @@ get_new_args (int *argc, char **argv)
     error (EXIT_FAILURE, 0, "error allocating memory");
 
   newargv[0] = argv[0];
-  if (geteuid() == 0)
+  if (geteuid () == 0)
     newargv[1] = "-odefault_permissions,allow_other,suid,noatime,lazytime";
   else
     newargv[1] = "-odefault_permissions,noatime=1";
@@ -5230,24 +5194,25 @@ main (int argc, char *argv[])
   struct fuse_session *se;
   struct fuse_cmdline_opts opts;
   char **newargv = get_new_args (&argc, argv);
-  struct ovl_data lo = {.debug = 0,
-                        .uid_mappings = NULL,
-                        .gid_mappings = NULL,
-                        .uid_str = NULL,
-                        .gid_str = NULL,
-                        .root = NULL,
-                        .lowerdir = NULL,
-                        .redirect_dir = NULL,
-                        .mountpoint = NULL,
-                        .fsync = 1,
-                        .xattr_permissions = 0,
-                        .timeout = 1000000000.0,
-                        .timeout_str = NULL,
-                        .writeback = 1,
+  struct ovl_data lo = {
+    .debug = 0,
+    .uid_mappings = NULL,
+    .gid_mappings = NULL,
+    .uid_str = NULL,
+    .gid_str = NULL,
+    .root = NULL,
+    .lowerdir = NULL,
+    .redirect_dir = NULL,
+    .mountpoint = NULL,
+    .fsync = 1,
+    .xattr_permissions = 0,
+    .timeout = 1000000000.0,
+    .timeout_str = NULL,
+    .writeback = 1,
   };
   struct fuse_loop_config fuse_conf = {
-                                       .clone_fd = 1,
-                                       .max_idle_threads = 10,
+    .clone_fd = 1,
+    .max_idle_threads = 10,
   };
   int ret = -1;
   cleanup_layer struct ovl_layer *layers = NULL;
@@ -5312,8 +5277,8 @@ main (int argc, char *argv[])
 
   if (lo.debug)
     {
-      fprintf (stderr, "uid=%s\n", lo.uid_str ? : "unchanged");
-      fprintf (stderr, "uid=%s\n", lo.gid_str ? : "unchanged");
+      fprintf (stderr, "uid=%s\n", lo.uid_str ?: "unchanged");
+      fprintf (stderr, "uid=%s\n", lo.gid_str ?: "unchanged");
       fprintf (stderr, "upperdir=%s\n", lo.upperdir ? lo.upperdir : "NOT USED");
       fprintf (stderr, "workdir=%s\n", lo.workdir ? lo.workdir : "NOT USED");
       fprintf (stderr, "lowerdir=%s\n", lo.lowerdir);
@@ -5385,9 +5350,8 @@ main (int argc, char *argv[])
                   if (ret < 0)
                     error (EXIT_FAILURE, errno, "stat upperdir");
 
-                  ret = write_permission_xattr (&lo, get_upper_layer (&lo)->fd,
-                                                lo.upperdir,
-                                                st.st_uid, st.st_gid, st.st_mode);
+                  ret = write_permission_xattr (&lo, get_upper_layer (&lo)->fd, lo.upperdir, st.st_uid, st.st_gid,
+                                                st.st_mode);
                   if (ret < 0)
                     error (EXIT_FAILURE, errno, "write xattr `%s` to upperdir", name);
                 }
@@ -5414,8 +5378,8 @@ main (int argc, char *argv[])
       if (path == NULL)
         goto err_out1;
       mkdir (path, 0700);
-      path = realloc(path, strlen(path)+strlen("/work")+1);
-      if (!path)
+      path = realloc (path, strlen (path) + strlen ("/work") + 1);
+      if (! path)
         error (EXIT_FAILURE, errno, "allocating workdir path");
       strcat (path, "/work");
       mkdir (path, 0700);
@@ -5435,7 +5399,7 @@ main (int argc, char *argv[])
     }
 
   umask (0);
-  disable_locking = !lo.threaded;
+  disable_locking = ! lo.threaded;
 
   se = fuse_session_new (&args, &ovl_oper, sizeof (ovl_oper), &lo);
   lo.se = se;

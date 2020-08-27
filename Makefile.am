@@ -36,3 +36,7 @@ srpm: dist-gzip fuse-overlayfs.spec
 	echo $(VERSION)
 	$(MAKE) -C $(WD) dist-xz
 	rpmbuild -bs --define "_sourcedir $(WD)" --define "_specdir $(WD)" --define "_builddir $(WD)" --define "_srcrpmdir $(WD)" --define "_rpmdir $(WD)" --define "_buildrootdir $(WD)/.build" fuse-overlayfs.spec
+
+clang-format:
+# do not format files that were copied into the source directory.
+	ls *.h *.c | egrep "\\.[hc]" | xargs clang-format -style=file -i

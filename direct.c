@@ -83,7 +83,7 @@ direct_fstat (struct ovl_layer *l, int fd, const char *path, unsigned int mask, 
 #ifdef HAVE_STATX
   struct statx stx;
 
-  ret = statx (fd, "", AT_STATX_DONT_SYNC|AT_EMPTY_PATH, mask, &stx);
+  ret = statx (fd, "", AT_STATX_DONT_SYNC | AT_EMPTY_PATH, mask, &stx);
 
   if (ret < 0 && errno == ENOSYS)
     goto fallback;
@@ -96,7 +96,7 @@ direct_fstat (struct ovl_layer *l, int fd, const char *path, unsigned int mask, 
   return ret;
 #endif
 
- fallback:
+fallback:
   ret = fstat (fd, st);
   if (ret != 0)
     return ret;
@@ -111,7 +111,7 @@ direct_statat (struct ovl_layer *l, const char *path, struct stat *st, int flags
 #ifdef HAVE_STATX
   struct statx stx;
 
-  ret = statx (l->fd, path, AT_STATX_DONT_SYNC|flags, mask, &stx);
+  ret = statx (l->fd, path, AT_STATX_DONT_SYNC | flags, mask, &stx);
 
   if (ret < 0 && errno == ENOSYS)
     goto fallback;
@@ -123,7 +123,7 @@ direct_statat (struct ovl_layer *l, const char *path, struct stat *st, int flags
 
   return ret;
 #endif
- fallback:
+fallback:
   ret = fstatat (l->fd, path, st, flags);
   if (ret != 0)
     return ret;
@@ -219,20 +219,19 @@ direct_must_be_remapped (struct ovl_layer *l)
   return l->has_privileged_stat_override == 0 && l->has_stat_override == 0;
 }
 
-struct data_source direct_access_ds =
-  {
-   .num_of_layers = direct_num_of_layers,
-   .load_data_source = direct_load_data_source,
-   .cleanup = direct_cleanup,
-   .file_exists = direct_file_exists,
-   .statat = direct_statat,
-   .fstat = direct_fstat,
-   .opendir = direct_opendir,
-   .readdir = direct_readdir,
-   .closedir = direct_closedir,
-   .openat = direct_openat,
-   .getxattr = direct_getxattr,
-   .listxattr = direct_listxattr,
-   .readlinkat = direct_readlinkat,
-   .must_be_remapped = direct_must_be_remapped,
-  };
+struct data_source direct_access_ds = {
+  .num_of_layers = direct_num_of_layers,
+  .load_data_source = direct_load_data_source,
+  .cleanup = direct_cleanup,
+  .file_exists = direct_file_exists,
+  .statat = direct_statat,
+  .fstat = direct_fstat,
+  .opendir = direct_opendir,
+  .readdir = direct_readdir,
+  .closedir = direct_closedir,
+  .openat = direct_openat,
+  .getxattr = direct_getxattr,
+  .listxattr = direct_listxattr,
+  .readlinkat = direct_readlinkat,
+  .must_be_remapped = direct_must_be_remapped,
+};
