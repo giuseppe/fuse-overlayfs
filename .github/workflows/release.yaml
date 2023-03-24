@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: disable AppArmor
+        run: sudo systemctl stop apparmor
     - uses: docker/setup-buildx-action@v1
     - name: "Build binaries from Containerfile.cross"
       run: docker buildx build -o /tmp --platform=amd64,arm64,arm,s390x,ppc64le,riscv64 -f Containerfile.cross .
