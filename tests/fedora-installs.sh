@@ -29,6 +29,9 @@ mv upper:2 lower
 mkdir upper workdir
 
 gcc -static -o suid-test $(dirname $0)/suid-test.c
+printf "truncate through open\n" > lower/killpriv-open-trunc
+printf "truncate through setattr\n" > lower/killpriv-setattr-trunc
+chmod 6777 lower/killpriv-open-trunc lower/killpriv-setattr-trunc
 
 fuse-overlayfs -o sync=0,threaded=1,lowerdir=lower,upperdir=upper,workdir=workdir,suid,dev merged
 SUID_TEST=$(pwd)/suid-test
@@ -41,6 +44,14 @@ test $(stat -c %h merged/usr) -gt 2
 
 stat -c %A upper/suid | grep s
 stat -c %a upper/nosuid | grep -v s
+: > merged/killpriv-open-trunc
+truncate -s 0 merged/killpriv-setattr-trunc
+test $(stat -c %s merged/killpriv-open-trunc) -eq 0
+test $(stat -c %s merged/killpriv-setattr-trunc) -eq 0
+test $(stat -c %a upper/killpriv-open-trunc) = 777
+test $(stat -c %a upper/killpriv-setattr-trunc) = 777
+test $(stat -c %a merged/killpriv-open-trunc) = 777
+test $(stat -c %a merged/killpriv-setattr-trunc) = 777
 
 # Install some big packages
 $CONTAINER_RUNTIME run --rm -v $(pwd)/merged:/merged quay.io/fedora/fedora dnf --use-host-config --installroot /merged --releasever 44 install -y emacs texlive
