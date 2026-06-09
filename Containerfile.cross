@@ -6,13 +6,15 @@
 #   -f Containerfile.cross .
 FROM --platform=$BUILDPLATFORM tonistiigi/xx:1.8.0 AS xx
 # Use ubuntu:<LTS>-<yyyyMMdd> for reproducibility
-FROM --platform=$BUILDPLATFORM ubuntu:noble-20251001 AS fuse-overlayfs
+FROM --platform=$BUILDPLATFORM ubuntu:noble-20260410 AS fuse-overlayfs
 ADD --chmod=0755 \
   https://raw.githubusercontent.com/reproducible-containers/repro-sources-list.sh/v0.1.4/repro-sources-list.sh \
   /usr/local/bin/repro-sources-list.sh
+RUN echo 'Acquire::Retries "3";' > /etc/apt/apt.conf.d/80-retries
 RUN \
   --mount=type=cache,target=/var/cache/apt,sharing=locked \
   --mount=type=cache,target=/var/lib/apt,sharing=locked \
+  apt-get update && apt-get install --no-install-recommends -y ca-certificates && \
   repro-sources-list.sh && \
   apt-get update && \
   apt-get install --no-install-recommends -y \
