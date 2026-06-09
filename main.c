@@ -710,6 +710,23 @@ do_chmod (struct ovl_data *lo, struct ovl_node *node, const char *path, mode_t m
 #define chmod ERROR
 
 static int
+clear_suid_sgid (struct ovl_data *lo, struct ovl_node *node, int fd, const char *path)
+{
+  mode_t mode = node->ino->mode;
+
+  if ((mode & (S_ISUID | S_ISGID)) == 0)
+    return 0;
+
+  mode &= ~(S_ISUID | S_ISGID);
+  node->ino->mode = mode;
+
+  if (fd >= 0)
+    return do_fchmod (lo, node, fd, mode);
+
+  return do_chmod (lo, node, path, mode);
+}
+
+static int
 set_fd_origin (int fd, const char *origin)
 {
   cleanup_close int opq_whiteout_fd = -1;
@@ -4112,15 +4129,25 @@ ovl_open (fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
   struct ovl_data *lo = ovl_data (req);
   cleanup_lock int l = enter_big_lock ();
   cleanup_close int fd = -1;
+  struct ovl_node *node = NULL;
 
   if (UNLIKELY (ovl_debug (req)))
     fprintf (stderr, "ovl_open(ino=%" PRIu64 ")\n", ino);
 
-  fd = ovl_do_open (req, ino, NULL, fi->flags, 0700, NULL, NULL);
+  fd = ovl_do_open (req, ino, NULL, fi->flags, 0700, &node, NULL);
   if (fd < 0)
     {
       fuse_reply_err (req, errno);
       return;
+    }
+  if ((fi->flags & O_TRUNC) && node)
+    {
+      if (clear_suid_sgid (lo, node, fd, NULL) < 0)
+        {
+          fuse_reply_err (req, errno);
+          return;
+        }
+      fuse_lowlevel_notify_inval_inode (lo->se, node_to_inode (node), -1, 0);
     }
   fi->fh = fd;
   if (get_timeout (lo) > 0)
@@ -4305,6 +4332,12 @@ ovl_setattr (fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to_set, stru
         ret = ftruncate (fd, attr->st_size);
       else
         ret = truncate (path, attr->st_size);
+      if (ret < 0)
+        {
+          fuse_reply_err (req, errno);
+          return;
+        }
+      ret = clear_suid_sgid (lo, node, fd, path);
       if (ret < 0)
         {
           fuse_reply_err (req, errno);
