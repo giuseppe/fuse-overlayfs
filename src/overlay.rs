@@ -78,6 +78,16 @@ fn empty_upper_dir(upper: &OvlLayer, path: &[u8]) -> FsResult<()> {
     Ok(())
 }
 
+/// Clear SUID/SGID bits on a file descriptor after a content-modifying operation.
+fn clear_suid_sgid(fd: RawFd) -> FsResult<()> {
+    let st = crate::sys::fs::fstat(fd)?;
+    if st.st_mode & (libc::S_ISUID | libc::S_ISGID) != 0 {
+        let new_mode = st.st_mode & !(libc::S_ISUID | libc::S_ISGID);
+        crate::sys::fs::fchmod(fd, new_mode)?;
+    }
+    Ok(())
+}
+
 /// The main overlay filesystem state.
 pub struct OverlayFs {
     config: OverlayConfig,
@@ -1861,6 +1871,12 @@ impl Filesystem for OverlayFs {
                 reply.error(Errno::from_i32(e.0));
                 return;
             }
+            if fd >= 0 {
+                if let Err(e) = clear_suid_sgid(fd) {
+                    reply.error(Errno::from_i32(e.0));
+                    return;
+                }
+            }
         }
 
         match inner.do_getattr(node_id, &self.config) {
@@ -2640,6 +2656,11 @@ impl Filesystem for OverlayFs {
                 match layer.ds.openat(&path, open_flags, 0o700) {
                     Ok(safe_fd) => {
                         let owned_fd = safe_fd.into_owned();
+                        if (flags_raw & libc::O_TRUNC) != 0 {
+                            if let Some(notifier) = self.notifier.get() {
+                                let _ = notifier.inval_inode(INodeNo(ino), -1, 0);
+                            }
+                        }
                         drop(inner);
                         self.reply_open_maybe_passthrough(ino, owned_fd, reply);
                         return;
@@ -2678,6 +2699,11 @@ impl Filesystem for OverlayFs {
         match layer.ds.openat(&path, open_flags, 0o700) {
             Ok(safe_fd) => {
                 let owned_fd = safe_fd.into_owned();
+                if (flags_raw & libc::O_TRUNC) != 0 {
+                    if let Some(notifier) = self.notifier.get() {
+                        let _ = notifier.inval_inode(INodeNo(ino), -1, 0);
+                    }
+                }
                 drop(inner);
                 self.reply_open_maybe_passthrough(ino, owned_fd, reply);
             }
@@ -2763,6 +2789,8 @@ impl Filesystem for OverlayFs {
                     Ok(n) => {
                         if let Some(mode) = restore_mode {
                             let _ = crate::sys::fs::fchmod(raw_fd, mode);
+                        } else {
+                            let _ = clear_suid_sgid(raw_fd);
                         }
                         reply.written(n as u32);
                     }
@@ -3549,7 +3577,10 @@ impl Filesystem for OverlayFs {
                 match crate::sys::fs::fallocate(fd.as_raw_fd(), mode, offset as i64, length as i64)
                 {
                     Err(e) => reply.error(Errno::from_i32(e.0)),
-                    Ok(()) => reply.ok(),
+                    Ok(()) => {
+                        let _ = clear_suid_sgid(fd.as_raw_fd());
+                        reply.ok();
+                    }
                 }
             }
         }
@@ -3619,7 +3650,10 @@ impl Filesystem for OverlayFs {
             capped_len,
         ) {
             Err(e) => reply.error(Errno::from_i32(e.0)),
-            Ok(n) => reply.written(std::cmp::min(n, u32::MAX as usize) as u32),
+            Ok(n) => {
+                let _ = clear_suid_sgid(fd_out.as_raw_fd());
+                reply.written(std::cmp::min(n, u32::MAX as usize) as u32);
+            }
         }
     }
 
