@@ -123,8 +123,8 @@ fn main() {
             "workdir={}",
             config.workdir.as_deref().unwrap_or("NOT USED")
         );
-        debug!("lowerdir={}", &lowerdir);
-        debug!("mountpoint={}", &mountpoint);
+        debug!("lowerdir={}", lowerdir);
+        debug!("mountpoint={}", mountpoint);
         debug!("plugins={}", config.plugins.as_deref().unwrap_or("<none>"));
         debug!(
             "fsync={}",
@@ -178,14 +178,21 @@ fn main() {
     let mut fuse_config = fuser::Config::default();
     fuse_config.mount_options = fuse_options;
     fuse_config.acl = acl;
-    fuse_config.n_threads = Some(n_threads);
+    if cfg!(target_os = "android") {
+        // Force single-thread on Android to comply with the fuser crate limits
+        fuse_config.n_threads = Some(1);
+    } else {
+        // Keep multi-threaded behavior on standard GNU/Linux
+        fuse_config.n_threads = Some(n_threads);
+    }
+
     fuse_config.clone_fd = true;
 
     let notifier_lock = std::sync::Arc::new(std::sync::OnceLock::new());
     let fs = overlay::OverlayFs::new(config, layers, workdir_raw_fd, notifier_lock.clone());
 
     // Mount the filesystem (this creates the FUSE session and mounts)
-    info!("mounting on {} with {} threads", &mountpoint, n_threads);
+    info!("mounting on {} with {} threads", mountpoint, n_threads);
     let session = match fuser::Session::new(fs, std::path::Path::new(&mountpoint), &fuse_config) {
         Ok(s) => s,
         Err(e) => {
