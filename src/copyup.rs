@@ -165,12 +165,33 @@ pub fn create_node_directory(
     // Create temp dir in workdir
     let (wd_name, c_wd_name) = next_wd_name(wd_counter);
 
-    fs::mkdirat(workdir_fd, &c_wd_name, st.st_mode | 0o755)?;
+    let stat_override_mode = upper.stat_override_mode();
+    let backing_mode = if stat_override_mode != crate::datasource::StatOverrideMode::None {
+        st.st_mode | 0o755
+    } else {
+        st.st_mode
+    };
+    fs::mkdirat(workdir_fd, &c_wd_name, backing_mode)?;
 
     // Open the new dir to set ownership/xattrs/timestamps
     let dfd = openat2::safe_openat(workdir_fd, wd_name.as_bytes(), libc::O_RDONLY, 0)?;
 
-    let _ = fs::fchown(dfd.as_raw_fd(), st.st_uid, st.st_gid);
+    if stat_override_mode != crate::datasource::StatOverrideMode::None {
+        let xattr_name = match stat_override_mode {
+            crate::datasource::StatOverrideMode::User
+            | crate::datasource::StatOverrideMode::Containers => {
+                crate::datasource::XATTR_OVERRIDE_CONTAINERS_STAT
+            }
+            crate::datasource::StatOverrideMode::Privileged => {
+                crate::datasource::XATTR_PRIVILEGED_OVERRIDE_STAT
+            }
+            crate::datasource::StatOverrideMode::None => unreachable!(),
+        };
+        let override_val = format!("{}:{}:{:o}", st.st_uid, st.st_gid, st.st_mode & 0o7777);
+        let _ = sxattr::fsetxattr(dfd.as_raw_fd(), xattr_name, override_val.as_bytes(), 0);
+    } else {
+        let _ = fs::fchown(dfd.as_raw_fd(), st.st_uid, st.st_gid);
+    }
     let _ = fs::futimens(dfd.as_raw_fd(), &times);
 
     // Copy xattrs from source to new dir

@@ -231,4 +231,47 @@ done
 umount merged
 rm -rf lower upper workdir merged
 
+# ========================================
+# Test 11: Copy-up directory preserves restrictive permissions
+# Regression test for issue #470: directory permissions permanently
+# widened to 0755 during copy-up in create_node_directory()
+# ========================================
+echo "=== Test 11: Copy-up directory preserves restrictive permissions ==="
+mkdir -p lower upper workdir merged
+
+mkdir -p lower/privatedir
+echo "secret" > lower/privatedir/secret.txt
+chmod 0700 lower/privatedir
+
+mkdir -p lower/restricteddir
+echo "data" > lower/restricteddir/data.txt
+chmod 0750 lower/restricteddir
+
+mkdir -p lower/minimaldir
+chmod 0100 lower/minimaldir
+
+fuse-overlayfs -o lowerdir=lower,upperdir=upper,workdir=workdir merged
+
+# Trigger copy-up of privatedir by creating a file inside it
+echo "new" > merged/privatedir/newfile
+
+# Verify permissions in upper layer are preserved (not widened to 0755)
+upper_mode=$(stat -c '%a' upper/privatedir)
+test "$upper_mode" = "700" || { echo "FAIL: expected 700, got $upper_mode"; exit 1; }
+
+# Trigger copy-up of restricteddir
+echo "new" > merged/restricteddir/newfile
+upper_mode=$(stat -c '%a' upper/restricteddir)
+test "$upper_mode" = "750" || { echo "FAIL: expected 750, got $upper_mode"; exit 1; }
+
+# Verify through the merged view as well
+merged_mode=$(stat -c '%a' merged/privatedir)
+test "$merged_mode" = "700" || { echo "FAIL: expected merged 700, got $merged_mode"; exit 1; }
+
+merged_mode=$(stat -c '%a' merged/restricteddir)
+test "$merged_mode" = "750" || { echo "FAIL: expected merged 750, got $merged_mode"; exit 1; }
+
+umount merged
+rm -rf lower upper workdir merged
+
 echo "All copy-up tests passed!"
