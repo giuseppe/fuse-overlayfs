@@ -156,6 +156,47 @@ $ stat -c %u:%g merged/a merged/b
 
 Those are the same IDs visible from outside the user namespace.
 
+# ENVIRONMENT
+
+**FUSE_OVERLAYFS_DISABLE_OVL_WHITEOUT**
+
+:   If set (to any value), disable the use of overlay whiteouts (character
+    devices with major/minor 0:0, including the atomic
+    **renameat2**(**RENAME_WHITEOUT**) path) and always create the portable
+    `.wh.` style whiteout files instead.
+
+    Background: the lowerdirs are read-only, so deleting (or replacing) a
+    file that exists in a lower layer cannot modify that layer.  Instead
+    the deletion is recorded in the upperdir as a *whiteout* entry that
+    hides the lower-layer name when the layers are merged.  Container
+    image builds rely on this constantly: each `RUN`/`COPY` step commits
+    a new layer, so replacing a file from an earlier step means deleting
+    it in the new layer.  When whiteout creation silently fails, those
+    deletions become no-ops and the subsequent create fails with
+    `EEXIST` (`File exists`).
+
+    This is useful on kernels or filesystems where the RENAME_WHITEOUT
+    flag or device whiteouts are unavailable or silently broken (e.g.
+    inside some virtual machines), since `.wh.` whiteouts only require
+    regular file creation.
+
+    For example, nested podman running inside a krun VM (e.g. started
+    with `podman --runtime=krun`) can hit a guest kernel that accepts
+    **renameat2**(**RENAME_WHITEOUT**) yet never creates the whiteout;
+    container builds in the nested podman then fail with errors like:
+
+    ```
+    dpkg: error: error creating new backup file '/var/lib/dpkg/status-old': File exists
+    Error: building at STEP "COPY . .": ... open /package.json: file exists
+    ```
+
+    Setting `FUSE_OVERLAYFS_DISABLE_OVL_WHITEOUT=1` in the environment
+    of the nested podman (it is inherited by the storage driver's
+    `mount_program`) makes such builds work again.
+
+    This is also the mode exercised by the CI "no-ovl-whiteouts" test
+    lane.
+
 # SEE ALSO
 
 **fuse**(8), **mount**(8), **user_namespaces**(7)
